@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Kafe Garson" />
+  <meta name="theme-color" content="#1c140e" />
+  <title>Kafe Garson Sipariş</title>
+  <style>
+    :root {
+      --bg: #1c140e;
+      --card: #271d16;
+      --card-border: #4a382c;
+      --text: #f6efe4;
+      --text-muted: #bda693;
+      --accent: #c4975f;
+      --accent-hover: #dcaf75;
+      --success: #1e532b;
+      --success-text: #9ddea3;
+      --danger: #b73e1e;
+      --danger-text: #ffb4a8;
+      --warning: #e09f3e;
+      --input-bg: #2b2118;
+      --btn-bg: #3a2a20;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-top: env(safe-area-inset-top, 20px);
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    header {
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-header {
+      background: var(--btn-bg);
+      color: #f3d2b5;
+      border: 1px solid var(--card-border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-header:active {
+      transform: scale(0.93);
+      background: var(--accent);
+      color: #1a130f;
+    }
+
+    /* Table Grid */
+    .grid {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+      gap: 12px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .table-card {
+      background: var(--success);
+      border-radius: 14px;
+      padding: 14px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+      min-height: 105px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .table-card:active {
+      transform: scale(0.96);
+    }
+
+    .table-card.occupied {
+      background: var(--danger);
+    }
+
+    .table-top {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .table-no {
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .badge.empty { color: var(--success-text); }
+    .badge.occupied { color: var(--danger-text); }
+
+    .table-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f0e6d8;
+      margin-top: 2px;
+      text-align: center;
+    }
+
+    .table-balance {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffd666;
+      margin-top: 6px;
+    }
+
+    /* Order View */
+    .order-view {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .occupied-warning {
+      background: #4a2810;
+      border-left: 4px solid var(--warning);
+      padding: 10px 16px;
+      font-size: 13px;
+      color: #ffd8a8;
+    }
+
+    .occupied-warning strong {
+      display: block;
+      color: #fff;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    /* Category Tabs */
+    .categories {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      overflow-x: auto;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--card-border);
+      background: var(--card);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .categories::-webkit-scrollbar { display: none; }
+
+    .cat-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: var(--bg);
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .cat-btn.active {
+      background: var(--accent);
+      color: #1a130f;
+      border-color: var(--accent);
+    }
+
+    /* Products List */
+    .products {
+      padding: 14px 16px;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-bottom: 140px;
+    }
+
+    .product-row {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .product-info {
+      flex: 1;
+    }
+
+    .product-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .product-price {
+      font-size: 14px;
+      color: var(--accent);
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-qty {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--btn-bg);
+      border: 1px solid var(--card-border);
+      color: #f3d2b5;
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .btn-qty:active {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .qty-num {
+      font-size: 16px;
+      font-weight: 700;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    /* Footer / Cart Bar */
+    .order-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border-top: 1px solid var(--card-border);
+      padding: 12px 18px env(safe-area-inset-bottom, 16px);
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.5);
+      z-index: 20;
+    }
+
+    .note-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 14px;
+      margin-bottom: 10px;
+      outline: none;
+      user-select: text;
+    }
+
+    .note-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .footer-action {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .total-badge {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f6efe4;
+    }
+
+    .btn-submit {
+      flex: 1;
+      background: var(--accent);
+      color: #1a130f;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-submit:active:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #2e7d32;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-weight: 700;
+      font-size: 15px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      z-index: 100;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Loading Spinner */
+    /* Section Filter Tabs */
+    .section-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 10px 16px;
+      overflow-x: auto;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--card-border);
+      background: var(--card);
+      -webkit-overflow-scrolling: touch;
+    }
+    .section-tabs::-webkit-scrollbar { display: none; }
+    .sec-tab {
+      padding: 6px 14px;
+      border-radius: 18px;
+      background: var(--bg);
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .sec-tab.active {
+      background: var(--accent);
+      color: #1a130f;
+      border-color: var(--accent);
+    }
+    .sec-badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.25);
+    }
+    .sec-tab.active .sec-badge {
+      background: rgba(0,0,0,0.3);
+      color: #fff;
+    }
+
+    /* Waiter badge & quick buttons */
+    .waiter-badge-btn {
+      background: var(--btn-bg);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .waiter-badge-btn:active {
+      transform: scale(0.95);
+      background: var(--accent);
+      color: #1a130f;
+    }
+
+    /* Quick chips on product row */
+    .prod-quick-chips {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .chip-qty-garson {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: var(--accent);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+    .chip-qty-garson:active {
+      background: var(--accent);
+      color: #1a130f;
+      transform: scale(0.92);
+    }
+
+    /* Quick order notes chips bar */
+    .quick-notes-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+    }
+    .quick-notes-bar::-webkit-scrollbar { display: none; }
+    .note-chip {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: #f3d2b5;
+      padding: 5px 10px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.1s ease;
+    }
+    .note-chip:active {
+      background: var(--accent);
+      color: #1a130f;
+      transform: scale(0.95);
+    }
+    .note-chip.clear {
+      color: var(--danger-text);
+      border-color: rgba(183, 62, 30, 0.4);
+    }
+
+    /* Modals (Waiter & Manager) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 999;
+    }
+    .mobile-modal {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+    .waiter-chip-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .waiter-chip {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .waiter-chip:active {
+      background: var(--accent);
+      color: #1a130f;
+      border-color: var(--accent);
+    }
+    .btn-modal-sec {
+      flex: 1;
+      background: var(--btn-bg);
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-modal-pri {
+      flex: 2;
+      background: var(--accent);
+      color: #1a130f;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .order-search-box {
+      padding: 8px 16px;
+      background: var(--card);
+      border-bottom: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="toast" class="toast">Sipariş Gönderildi!</div>
+
+  <header>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div id="headerTitle" class="title">Masalar</div>
+      <button type="button" class="waiter-badge-btn" onclick="openWaiterModal()">
+        👤 <span id="currentWaiterDisplay">Garson</span> ▾
+      </button>
+    </div>
+    <div class="header-actions">
+      <button id="btnTables" class="btn-header" style="display:none;" onclick="showTablesView()">← Masalar</button>
+      <button type="button" class="btn-header" onclick="openManagerPinPrompt()" title="Kasa Yönetici Girişi">🔐 Kasa</button>
+      <button type="button" id="btnRefresh" class="btn-header" onclick="refreshGarsonApp()">↻</button>
+    </div>
+  </header>
+
+  <!-- SECTION SELECTOR TABS -->
+  <div id="sectionTabs" class="section-tabs"></div>
+
+  <!-- TABLE SELECTION SCREEN -->
+  <div id="tablesView" class="grid">
+    <div class="loader">Masalar yükleniyor...</div>
+  </div>
+
+  <!-- ORDER SCREEN -->
+  <div id="orderView" class="order-view">
+    <div id="occupiedWarning" class="occupied-warning" style="display:none;">
+      <strong>⚠️ Bu masada açık hesap var: <span id="occupiedAmount">0.00 ₺</span></strong>
+      Gireceğiniz ürünler masanın mevcut hesabına eklenecektir.
+    </div>
+
+    <!-- Product Search across all categories -->
+    <div class="order-search-box">
+      <input type="text" id="garsonSearchInput" class="note-input" placeholder="🔍 Ürün ara (tüm menü)..." oninput="onGarsonSearch()" style="margin: 0;" />
+    </div>
+
+    <div id="categoriesBar" class="categories"></div>
+
+    <div id="productsList" class="products"></div>
+
+    <div class="order-footer">
+      <!-- Quick Note Presets -->
+      <div class="quick-notes-bar">
+        <span class="note-chip" onclick="appendGarsonNote('Sade')">Sade</span>
+        <span class="note-chip" onclick="appendGarsonNote('1x Az Şekerli')">1x Az Şekerli</span>
+        <span class="note-chip" onclick="appendGarsonNote('2x Az Şekerli')">2x Az Şekerli</span>
+        <span class="note-chip" onclick="appendGarsonNote('1x Orta')">1x Orta</span>
+        <span class="note-chip" onclick="appendGarsonNote('2x Orta')">2x Orta</span>
+        <span class="note-chip" onclick="appendGarsonNote('Şekerli')">Şekerli</span>
+        <span class="note-chip" onclick="appendGarsonNote('Sütlü')">Sütlü</span>
+        <span class="note-chip" onclick="appendGarsonNote('Buzsuz')">Buzsuz</span>
+        <span class="note-chip" onclick="appendGarsonNote('Paket')">Paket</span>
+        <span class="note-chip clear" onclick="clearGarsonNote()">Temizle ✕</span>
+      </div>
+
+      <input type="text" id="orderNote" class="note-input" placeholder="Sipariş notu (örn: 1 az şekerli, 1 orta)..." />
+      <div class="footer-action">
+        <div id="totalText" class="total-badge">0 ürün · 0.00 ₺</div>
+        <button id="btnSubmit" class="btn-submit" disabled onclick="submitOrder()">Siparişi Onayla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Waiter Login Modal -->
+  <div class="modal-overlay" id="waiterModal" style="display: none;">
+    <div class="mobile-modal">
+      <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--accent);">👤 Garson Seçimi</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+        Siparişlerin hangi garson tarafından girildiğini ve fiş üzerinde adınızın yazması için isminizi seçin:
+      </p>
+      <div class="waiter-chip-grid">
+        <button type="button" class="waiter-chip" onclick="selectWaiterName('Ahmet')">Ahmet</button>
+        <button type="button" class="waiter-chip" onclick="selectWaiterName('Mehmet')">Mehmet</button>
+        <button type="button" class="waiter-chip" onclick="selectWaiterName('Ali')">Ali</button>
+        <button type="button" class="waiter-chip" onclick="selectWaiterName('Ayşe')">Ayşe</button>
+        <button type="button" class="waiter-chip" onclick="selectWaiterName('Garson 1')">Garson 1</button>
+        <button type="button" class="waiter-chip" onclick="selectWaiterName('Garson 2')">Garson 2</button>
+      </div>
+      <div style="margin-top: 14px;">
+        <input type="text" id="customWaiterInput" class="note-input" placeholder="Veya adınızı buraya yazın..." style="margin-bottom: 10px;" />
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-modal-sec" onclick="closeWaiterModal()">Kapat</button>
+          <button type="button" class="btn-modal-pri" onclick="saveCustomWaiterName()">Kaydet ve Başla</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Manager PIN Modal -->
+  <div class="modal-overlay" id="managerModal" style="display: none;">
+    <div class="mobile-modal">
+      <h3 style="font-size: 18px; margin-bottom: 8px; color: #b388ff;">🔐 Kasa Yönetici Girişi</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+        Telefonunuzdan kasa ekranına ve tüm yetkilere erişmek için kasada tanımlı Yönetici PIN kodunu girin:
+      </p>
+      <input type="password" id="managerPinInput" class="note-input" placeholder="4 Haneli PIN Kodu" maxlength="6" inputmode="numeric" style="text-align: center; font-size: 24px; letter-spacing: 6px; margin-bottom: 14px;" />
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn-modal-sec" onclick="closeManagerModal()">İptal</button>
+        <button type="button" class="btn-modal-pri" style="background: #b388ff; color: #1a130f;" onclick="submitManagerPin()">Giriş Yap</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../signalr.min.js"></script>
+  <script>
+    const HEADERS = {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "1"
+    };
+
+    let allTables = [];
+    let allMenu = [];
+    let selectedTable = null;
+    let selectedCategoryId = "featured"; // Default to featured category!
+    let garsonSearchTerm = "";
+    let cart = {}; // productId -> { product, quantity }
+    let isSubmitting = false;
+
+    // Toast Notification
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.style.background = isError ? "#c62828" : "#2e7d32";
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2500);
+    }
+
+    async function refreshGarsonApp() {
+      const btn = document.getElementById("btnRefresh");
+      if (btn) {
+        btn.innerText = "⏳";
+        btn.disabled = true;
+      }
+      showToast("Sayfa ve masalar güncelleniyor...");
+
+      try {
+        await Promise.all([loadTables(), loadMenu()]);
+      } catch (e) {}
+
+      setTimeout(() => {
+        const cleanUrl = window.location.pathname.split('?')[0];
+        window.location.href = cleanUrl + '?v=' + Date.now();
+      }, 350);
+    }
+
+    // Waiter Login / Identity
+    function checkWaiterLogin() {
+      let name = localStorage.getItem("cafe_garson_name");
+      if (!name) {
+        openWaiterModal();
+      } else {
+        updateWaiterHeader(name);
+      }
+    }
+
+    function updateWaiterHeader(name) {
+      const el = document.getElementById("currentWaiterDisplay");
+      if (el) el.textContent = name;
+    }
+
+    function openWaiterModal() {
+      document.getElementById("waiterModal").style.display = "flex";
+    }
+
+    function closeWaiterModal() {
+      if (!localStorage.getItem("cafe_garson_name")) {
+        selectWaiterName("Garson 1");
+      }
+      document.getElementById("waiterModal").style.display = "none";
+    }
+
+    function selectWaiterName(name) {
+      localStorage.setItem("cafe_garson_name", name);
+      updateWaiterHeader(name);
+      document.getElementById("waiterModal").style.display = "none";
+      showToast(`👤 Aktif Garson: ${name}`);
+    }
+
+    function saveCustomWaiterName() {
+      const input = document.getElementById("customWaiterInput");
+      const name = (input ? input.value : "").trim();
+      if (!name) {
+        alert("Lütfen bir isim girin.");
+        return;
+      }
+      selectWaiterName(name);
+    }
+
+    // Manager PIN Prompt
+    function openManagerPinPrompt() {
+      const input = document.getElementById("managerPinInput");
+      if (input) input.value = "";
+      document.getElementById("managerModal").style.display = "flex";
+    }
+
+    function closeManagerModal() {
+      document.getElementById("managerModal").style.display = "none";
+    }
+
+    async function submitManagerPin() {
+      const input = document.getElementById("managerPinInput");
+      const pin = (input ? input.value : "").trim();
+      if (!pin) {
+        alert("Lütfen PIN kodunu girin.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/auth/verify-manager", {
+          method: "POST",
+          headers: HEADERS,
+          body: JSON.stringify({ pin })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Geçersiz PIN");
+        
+        sessionStorage.setItem("cafe_manager_auth", "true");
+        showToast("✅ Yönetici girişi başarılı! Kasa açılıyor...");
+        setTimeout(() => {
+          window.location.href = "/station/";
+        }, 400);
+      } catch (e) {
+        alert("Hata: " + e.message);
+      }
+    }
+
+    // Quick notes helpers
+    function appendGarsonNote(text) {
+      const input = document.getElementById("orderNote");
+      if (!input) return;
+      const current = input.value.trim();
+      if (!current) {
+        input.value = text;
+      } else {
+        input.value = current + ", " + text;
+      }
+    }
+
+    function clearGarsonNote() {
+      const input = document.getElementById("orderNote");
+      if (input) input.value = "";
+    }
+
+    // Load tables & menu
+    async function init() {
+      checkWaiterLogin();
+      await Promise.all([loadTables(), loadMenu()]);
+      setupSignalR();
+    }
+
+    async function loadTables() {
+      try {
+        const res = await fetch("/api/tables", { headers: HEADERS });
+        if (!res.ok) throw new Error("Masalar alınamadı");
+        allTables = await res.json();
+        renderTables();
+      } catch (err) {
+        document.getElementById("tablesView").innerHTML = `
+          <div style="padding: 20px; color: var(--danger-text); text-align: center; width: 100%;">
+            Bağlantı hatası: ${err.message}<br><br>
+            <button class="btn-header" onclick="loadTables()">Tekrar Dene</button>
+          </div>
+        `;
+      }
+    }
+
+    async function loadMenu() {
+      try {
+        const res = await fetch("/api/menu", { headers: HEADERS });
+        if (!res.ok) throw new Error("Menü alınamadı");
+        allMenu = await res.json();
+      } catch (err) {
+        console.error("Menü yükleme hatası:", err);
+      }
+    }
+
+    let currentGarsonSection = "Sol";
+
+    function setGarsonSection(sec) {
+      currentGarsonSection = sec;
+      renderGarsonSectionTabs();
+      renderTables();
+    }
+
+    function renderGarsonSectionTabs() {
+      const bar = document.getElementById("sectionTabs");
+      if (!bar) return;
+
+      const sections = ["Sol", "Sağ", "Dış", "İç", "Kapı"];
+      bar.innerHTML = sections.map(sec => {
+        const secTables = allTables.filter(t => t.section === sec);
+        const occ = secTables.filter(t => t.isOccupied).length;
+        const countText = `${occ}/${secTables.length}`;
+        const isActive = currentGarsonSection === sec;
+        return `
+          <button type="button" class="sec-tab ${isActive ? 'active' : ''}" onclick="setGarsonSection('${sec}')">
+            <span>${sec}</span>
+            <span class="sec-badge">${countText}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderTables() {
+      renderGarsonSectionTabs();
+      const container = document.getElementById("tablesView");
+      if (!allTables || allTables.length === 0) {
+        container.innerHTML = '<div class="loader">Kayıtlı masa bulunamadı.</div>';
+        return;
+      }
+
+      const displayTables = allTables.filter(t => t.section === currentGarsonSection);
+
+      if (displayTables.length === 0) {
+        container.innerHTML = '<div class="loader" style="grid-column: 1/-1;">Bu bölümde masa yok.</div>';
+        return;
+      }
+
+      container.innerHTML = displayTables.map(t => {
+        const isOcc = !!t.isOccupied;
+        const balance = (t.remainingAmount ?? 0).toFixed(2);
+        return `
+          <div class="table-card ${isOcc ? 'occupied' : ''}" onclick="selectTable(${t.id})">
+            <div class="table-top">
+              <span class="table-no">${t.name}</span>
+              <span class="badge ${isOcc ? 'occupied' : 'empty'}">${isOcc ? 'Dolu' : 'Boş'}</span>
+            </div>
+            <div class="table-name">${t.section} Bölümü</div>
+            ${isOcc ? `<div class="table-balance">${balance} ₺</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectTable(id) {
+      selectedTable = allTables.find(t => t.id === id);
+      if (!selectedTable) return;
+
+      cart = {};
+      document.getElementById("orderNote").value = "";
+      garsonSearchTerm = "";
+      const searchInput = document.getElementById("garsonSearchInput");
+      if (searchInput) searchInput.value = "";
+      updateCartSummary();
+
+      document.getElementById("headerTitle").innerText = selectedTable.name;
+      document.getElementById("btnTables").style.display = "block";
+      document.getElementById("sectionTabs").style.display = "none";
+      document.getElementById("tablesView").style.display = "none";
+      document.getElementById("orderView").style.display = "flex";
+
+      const warn = document.getElementById("occupiedWarning");
+      if (selectedTable.isOccupied) {
+        warn.style.display = "block";
+        document.getElementById("occupiedAmount").innerText = (selectedTable.remainingAmount ?? 0).toFixed(2) + " ₺";
+      } else {
+        warn.style.display = "none";
+      }
+
+      renderCategories();
+      renderProducts();
+    }
+
+    function showTablesView() {
+      selectedTable = null;
+      document.getElementById("headerTitle").innerText = "Masalar";
+      document.getElementById("btnTables").style.display = "none";
+      document.getElementById("orderView").style.display = "none";
+      document.getElementById("sectionTabs").style.display = "flex";
+      document.getElementById("tablesView").style.display = "grid";
+      loadTables();
+    }
+
+    function renderCategories() {
+      const bar = document.getElementById("categoriesBar");
+      let html = `
+        <button class="cat-btn ${selectedCategoryId === 'featured' ? 'active' : ''}" onclick="selectCategory('featured')">
+          ⭐ Öne Çıkanlar
+        </button>
+      `;
+      html += allMenu.map(c => `
+        <button class="cat-btn ${c.id === selectedCategoryId ? 'active' : ''}" onclick="selectCategory(${c.id})">
+          ${c.name}
+        </button>
+      `).join('');
+      bar.innerHTML = html;
+    }
+
+    function selectCategory(id) {
+      selectedCategoryId = id;
+      renderCategories();
+      renderProducts();
+    }
+
+    function onGarsonSearch() {
+      const input = document.getElementById("garsonSearchInput");
+      garsonSearchTerm = (input ? input.value : "").trim().toLowerCase();
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const list = document.getElementById("productsList");
+      let allProducts = [];
+      allMenu.forEach(c => {
+        if (c.products) allProducts = allProducts.concat(c.products);
+      });
+
+      let products = [];
+      if (garsonSearchTerm) {
+        products = allProducts.filter(p => p.name.toLowerCase().includes(garsonSearchTerm));
+      } else {
+        if (selectedCategoryId === 'featured') {
+          products = allProducts.filter(p => p.isFeatured);
+          if (products.length === 0) products = allProducts.slice(0, 8);
+        } else {
+          const currentCat = allMenu.find(c => c.id === selectedCategoryId);
+          if (currentCat && currentCat.products) products = currentCat.products;
+        }
+      }
+
+      if (products.length === 0) {
+        list.innerHTML = '<div class="loader">Ürün bulunamadı.</div>';
+        return;
+      }
+
+      list.innerHTML = products.map(p => {
+        const qty = cart[p.id]?.quantity || 0;
+        return `
+          <div class="product-row">
+            <div class="product-info">
+              <div class="product-name">${p.name}</div>
+              <div class="product-price">${p.price.toFixed(2)} ₺</div>
+              <div class="prod-quick-chips">
+                <button type="button" class="chip-qty-garson" onclick="changeQty(${p.id}, 1)">+1</button>
+                <button type="button" class="chip-qty-garson" onclick="changeQty(${p.id}, 2)">+2</button>
+                <button type="button" class="chip-qty-garson" onclick="changeQty(${p.id}, 5)">+5</button>
+              </div>
+            </div>
+            <div class="qty-controls">
+              <button class="btn-qty" onclick="changeQty(${p.id}, -1)">−</button>
+              <span class="qty-num">${qty}</span>
+              <button class="btn-qty" onclick="changeQty(${p.id}, 1)">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function changeQty(productId, delta) {
+      let current = cart[productId];
+      if (!current && delta > 0) {
+        let p = null;
+        for (const c of allMenu) {
+          p = c.products.find(x => x.id === productId);
+          if (p) break;
+        }
+        if (p) cart[productId] = { product: p, quantity: delta };
+      } else if (current) {
+        current.quantity += delta;
+        if (current.quantity <= 0) {
+          delete cart[productId];
+        }
+      }
+      renderProducts();
+      updateCartSummary();
+    }
+
+    function updateCartSummary() {
+      const items = Object.values(cart);
+      const count = items.reduce((sum, i) => sum + i.quantity, 0);
+      const total = items.reduce((sum, i) => sum + (i.product.price * i.quantity), 0);
+
+      document.getElementById("totalText").innerText = `${count} ürün · ${total.toFixed(2)} ₺`;
+      document.getElementById("btnSubmit").disabled = count === 0 || isSubmitting;
+    }
+
+    async function submitOrder() {
+      if (!selectedTable || isSubmitting) return;
+
+      const items = Object.values(cart).map(i => ({
+        productId: i.product.id,
+        quantity: i.quantity
+      }));
+
+      if (items.length === 0) return;
+
+      const note = document.getElementById("orderNote").value.trim();
+      const btn = document.getElementById("btnSubmit");
+      const waiterName = localStorage.getItem("cafe_garson_name") || "Garson";
+
+      isSubmitting = true;
+      btn.disabled = true;
+      btn.innerText = "Gönderiliyor...";
+
+      try {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: HEADERS,
+          body: JSON.stringify({
+            tableId: selectedTable.id,
+            note: note || undefined,
+            items: items,
+            createdBy: waiterName
+          })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || "Sipariş verilemedi");
+        }
+
+        const data = await res.json();
+        showToast(`✅ ${selectedTable.name} siparişi gönderildi!`);
+        showTablesView();
+      } catch (err) {
+        showToast("Hata: " + err.message, true);
+        btn.disabled = false;
+        btn.innerText = "Siparişi Onayla";
+      } finally {
+        isSubmitting = false;
+      }
+    }
+
+    function setupSignalR() {
+      if (typeof signalR === "undefined") return;
+      const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/kitchen")
+        .withAutomaticReconnect()
+        .build();
+
+      connection.on("tablesUpdated", () => {
+        loadTables();
+      });
+
+      connection.start().catch(e => console.log("SignalR bağlantısı kurulamadı:", e));
+    }
+
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>

@@ -1,0 +1,2062 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cafe Sipariş — Kasa & Yönetim Paneli</title>
+  <style>
+    :root {
+      --bg: #1a130f;
+      --panel: #271d16;
+      --card: #33261d;
+      --border: #4d3a2c;
+      --text: #f7efe6;
+      --text-muted: #bda693;
+      --accent: #c4975f;
+      --accent-hover: #dcaf75;
+      --success: #2e7d32;
+      --danger: #c62828;
+      --danger-hover: #e53935;
+      --occupied: #b73e1e;
+      --empty: #1e6b37;
+      --paper: #fffcf8;
+      --ink: #1c140e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--panel);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { margin: 0; font-size: 20px; font-weight: 700; color: var(--accent); }
+    .status-pill {
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: #233324;
+      color: #9ddea3;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-pill.bad { background: #3c2020; color: #ffb4a8; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .top-stats { display: flex; gap: 16px; align-items: center; font-size: 14px; }
+    .stat-badge {
+      background: var(--card);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .stat-badge strong { color: var(--accent); }
+    .nav-tabs { display: flex; gap: 8px; }
+    .nav-tab {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .nav-tab.active {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+
+    main { padding: 20px 24px; flex: 1; }
+
+    /* Tables Grid */
+    .tables-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 16px;
+    }
+    .table-card {
+      background: var(--panel);
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      padding: 16px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 140px;
+      position: relative;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .table-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+    .table-card.occupied {
+      border-color: var(--occupied);
+      background: linear-gradient(180deg, #381c15 0%, var(--panel) 100%);
+    }
+    .table-card.empty {
+      border-color: #274730;
+    }
+    .table-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .table-no { font-size: 26px; font-weight: 800; color: #fff; margin: 0; }
+    .table-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+    .table-card.occupied .table-tag { background: var(--occupied); color: white; }
+    .table-card.empty .table-tag { background: var(--empty); color: #c4ebd0; }
+    .table-card-bottom { margin-top: 14px; }
+    .table-price { font-size: 20px; font-weight: 800; color: #f2cb9b; }
+    .table-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Modal / Drawer */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 1080px;
+      height: 90vh;
+      max-height: 900px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #211812;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .modal-title { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
+    .modal-subnav {
+      display: flex;
+      gap: 6px;
+      background: #18110b;
+      padding: 3px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .modal-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .modal-tab-btn:hover { color: var(--text); }
+    .modal-tab-btn.active {
+      background: var(--accent);
+      color: #1a130f;
+    }
+    .badge-count {
+      background: #b73e1e;
+      color: #fff;
+      border-radius: 10px;
+      padding: 1px 6px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 26px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+      flex: 1;
+      min-height: 0;
+    }
+    @media (max-width: 820px) {
+      .modal-body { grid-template-columns: 1fr; }
+    }
+
+    /* Catalog View in Modal */
+    .modal-catalog-body {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+      padding: 16px 20px;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
+    }
+    @media (max-width: 860px) {
+      .modal-catalog-body {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+      }
+    }
+    .catalog-left {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .catalog-top-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .catalog-categories {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      white-space: nowrap;
+      flex: 1;
+      padding-bottom: 2px;
+    }
+    .catalog-categories::-webkit-scrollbar { height: 4px; }
+    .catalog-categories::-webkit-scrollbar-thumb { background: #4a382c; border-radius: 4px; }
+    .catalog-cat-btn {
+      background: #251b14;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 7px 14px;
+      border-radius: 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .catalog-cat-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .catalog-cat-btn.active {
+      background: var(--accent);
+      color: #1a130f;
+      border-color: var(--accent);
+    }
+    .catalog-search-box {
+      min-width: 190px;
+    }
+    .catalog-products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      overflow-y: auto;
+      padding-right: 4px;
+      flex: 1;
+      align-content: start;
+    }
+    .cat-prod-card {
+      background: #261c16;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 92px;
+      transition: all 0.15s ease;
+      position: relative;
+      user-select: none;
+    }
+    .cat-prod-card:hover {
+      background: #38271d;
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .cat-prod-card:active {
+      transform: scale(0.97);
+    }
+    .cat-prod-card.in-cart {
+      border-color: var(--accent);
+      background: #332317;
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .cat-prod-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+      line-height: 1.25;
+      margin-bottom: 6px;
+    }
+    .cat-prod-price {
+      font-weight: 800;
+      font-size: 14px;
+      color: var(--accent);
+    }
+    .cat-prod-qty-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #2e7d32;
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+      border-radius: 12px;
+      padding: 2px 7px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+
+    /* Catalog Right / Cart */
+    .catalog-right {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      overflow: hidden;
+      min-height: 0;
+    }
+    .catalog-cart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+    .catalog-cart-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #fff;
+    }
+    .cashier-cart-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 4px;
+      min-height: 140px;
+    }
+    .cart-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1d150f;
+      border: 1px solid #36291f;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+    .cart-item-info {
+      flex: 1;
+      overflow: hidden;
+      margin-right: 8px;
+    }
+    .cart-item-name {
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cart-item-unit {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .cart-item-qty-box {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-cart-qty {
+      background: #3a2b21;
+      border: 1px solid #553e2f;
+      color: #fff;
+      border-radius: 6px;
+      width: 24px;
+      height: 24px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-cart-qty:hover {
+      background: var(--accent);
+      color: #1a130f;
+    }
+    .cart-item-qty-num {
+      font-weight: 800;
+      font-size: 13px;
+      min-width: 18px;
+      text-align: center;
+      color: #ffd666;
+    }
+    .cart-item-total {
+      font-weight: 800;
+      color: var(--accent);
+      min-width: 55px;
+      text-align: right;
+    }
+    .btn-cart-del {
+      background: transparent;
+      border: none;
+      color: #c44d3d;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0 4px;
+      margin-left: 4px;
+    }
+    .btn-cart-del:hover {
+      color: #ff6b57;
+    }
+    .cart-empty-msg {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px 10px;
+      font-size: 13px;
+    }
+    .cashier-cart-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      flex-shrink: 0;
+    }
+    .catalog-print-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .cashier-cart-footer {
+      margin-top: 10px;
+      flex-shrink: 0;
+    }
+
+    /* Bill list in modal */
+    .bill-section h3 { margin-top: 0; font-size: 16px; color: var(--accent); }
+    .bill-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .bill-table th { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
+    .bill-table td { padding: 10px 6px; border-bottom: 1px solid #36291f; vertical-align: middle; }
+    .bill-table tr:hover { background: #2f231b; }
+    .btn-del {
+      background: #47211a;
+      color: #ffb4a8;
+      border: 1px solid #753328;
+      border-radius: 6px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .btn-del:hover { background: var(--danger); color: white; }
+
+    /* Actions Panel */
+    .actions-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .summary-box {
+      background: #1c140e;
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .summary-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-muted); }
+    .summary-row.big { font-size: 18px; font-weight: 800; color: #fff; border-top: 1px dashed var(--border); padding-top: 6px; }
+    .summary-row.big span:last-child { color: var(--accent); }
+
+    .action-group { display: flex; flex-direction: column; gap: 8px; }
+    .action-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+    .action-row { display: flex; gap: 8px; }
+    .input-ctrl, .select-ctrl {
+      background: #1c140e;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      width: 100%;
+    }
+    .btn {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-align: center;
+    }
+    .btn-primary { background: var(--accent); color: #1a130f; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-secondary { background: #4a382c; color: var(--text); }
+    .btn-secondary:hover { background: #5a4536; }
+
+    /* Section Tabs */
+    .section-nav {
+      display: flex;
+      gap: 10px;
+      padding: 12px 24px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      align-items: center;
+    }
+    .section-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .section-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .section-btn.active {
+      background: var(--accent);
+      color: #1a130f;
+      border-color: var(--accent);
+    }
+    .section-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.3);
+      color: #dfcfc2;
+    }
+    .section-btn.active .section-badge {
+      background: rgba(0,0,0,0.35);
+      color: #fff;
+    }
+
+    /* Tickets View (Kitchen Feed) */
+    .tickets-view {
+      display: none;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .tickets-view.active { display: grid; }
+    .ticket-card {
+      background: var(--paper);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 16px 18px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .ticket-card h2 { margin: 0 0 4px; font-size: 24px; }
+    .ticket-meta { font-size: 13px; color: #665; margin-bottom: 10px; }
+    .ticket-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 10px; }
+    .ticket-table td { padding: 4px 0; }
+    .ticket-table td.qty { width: 34px; font-weight: 700; }
+    .ticket-table td.price { text-align: right; }
+    .ticket-total { display: flex; justify-content: space-between; font-weight: 700; border-top: 1px dashed #333; padding-top: 6px; }
+
+    /* Print only */
+    .print-area { display: none; }
+    @media print {
+      body { background: white !important; color: black !important; }
+      header, main, .modal-overlay { display: none !important; }
+      .print-area {
+        display: block !important;
+        font-family: "Consolas", "Courier New", monospace;
+        width: 72mm;
+        margin: 0 auto;
+        padding: 4mm 0;
+        font-size: 13px;
+        color: black;
+      }
+      .print-area h2 { text-align: center; margin: 4px 0; font-size: 18px; }
+      .print-area .meta { text-align: center; margin-bottom: 8px; font-size: 11px; }
+      .print-area table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+      .print-area td { padding: 2px 0; font-size: 12px; }
+      .print-area .total { border-top: 1px dashed black; padding-top: 4px; font-weight: bold; display: flex; justify-content: space-between; }
+    }
+
+    /* Quick Note Chips */
+    .quick-notes-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 6px;
+    }
+    .note-chip {
+      background: #251b14;
+      border: 1px solid var(--border);
+      color: #ebd9cb;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.1s ease;
+    }
+    .note-chip:hover {
+      background: var(--accent);
+      color: #1a130f;
+      border-color: var(--accent);
+    }
+    .note-chip.clear {
+      background: #3d1c16;
+      color: #ff9e80;
+      border-color: #63261c;
+    }
+    .note-chip.clear:hover {
+      background: #d32f2f;
+      color: #fff;
+    }
+
+    /* Quick Quantity Chips on Product Card */
+    .cat-quick-chips {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .chip-qty {
+      background: #38271e;
+      border: 1px solid #5a4130;
+      color: #f5dfca;
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+    .chip-qty:hover {
+      background: var(--accent);
+      color: #1a130f;
+    }
+    .chip-qty:active {
+      transform: scale(0.9);
+    }
+
+    /* Stepper Box for Item Partial Payment */
+    .pay-stepper-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: #18110b;
+      border: 1px solid #3d2b20;
+      border-radius: 6px;
+      padding: 2px 4px;
+    }
+    .btn-step {
+      background: #2c1e15;
+      border: 1px solid #4a3424;
+      color: #fff;
+      border-radius: 4px;
+      width: 22px;
+      height: 22px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-step:hover {
+      background: var(--accent);
+      color: #1a130f;
+    }
+    .pay-qty-input {
+      width: 28px;
+      background: transparent;
+      border: none;
+      color: #ffd666;
+      font-weight: 800;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    /* Visual Table Transfer / Merge Modal */
+    .visual-action-modal {
+      max-width: 680px;
+    }
+    .vat-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      padding: 14px 0;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+    .vat-card {
+      background: #251b14;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .vat-card.disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .vat-card.empty-target {
+      background: #1e3a24;
+      border-color: #2e7d32;
+    }
+    .vat-card.occupied-target {
+      background: #3e2717;
+      border-color: #d87a2d;
+    }
+    .vat-card.selected {
+      border-color: #ffd666;
+      box-shadow: 0 0 0 2px #ffd666;
+      transform: scale(1.03);
+    }
+    .vat-name {
+      font-weight: 800;
+      font-size: 15px;
+      color: #fff;
+    }
+    .vat-status {
+      font-size: 11px;
+      margin-top: 4px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .vat-balance {
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffd666;
+      margin-top: 2px;
+    }
+
+    /* Mobile Responsive Support */
+    @media (max-width: 768px) {
+      header {
+        padding: 10px 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .top-stats {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .nav-tabs {
+        width: 100%;
+        overflow-x: auto;
+      }
+      .modal {
+        width: 98vw;
+        height: 94vh;
+        max-height: 94vh;
+      }
+      .modal-header {
+        padding: 10px 14px;
+      }
+      .modal-body {
+        grid-template-columns: 1fr;
+        padding: 12px 14px;
+      }
+      .modal-catalog-body {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+        padding: 12px 14px;
+      }
+      .catalog-right {
+        max-height: 320px;
+      }
+      .vat-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>☕ Cafe Sipariş</h1>
+      <span class="status-pill" id="statusPill"><span class="dot"></span> <span id="statusText">Bağlanıyor…</span></span>
+    </div>
+    <div class="top-stats">
+      <div class="stat-badge">Dolu Masa: <strong id="statOccupied">0</strong> / <span id="statTotalTables">50</span></div>
+      <div class="stat-badge">Açık Hesap: <strong id="statTotal">0,00 ₺</strong></div>
+    </div>
+    <div class="nav-tabs">
+      <button type="button" class="nav-tab active" id="tabTables" onclick="switchView('tables')">Masalar</button>
+      <button type="button" class="nav-tab" id="tabTickets" onclick="switchView('tickets')">Mutfak/Bar Fişleri</button>
+      <button type="button" class="nav-tab" style="background:#382417; border-color:var(--accent); color:var(--accent); font-weight:700;" onclick="openQrModal()">📱 Garson Telefonu Bağla</button>
+      <button type="button" class="nav-tab" style="background:#26182c; border-color:#b388ff; color:#d1c4e9; font-weight:700;" onclick="openManagerPinModal()">🔐 Mobil Yönetici İzni</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Section Navigation -->
+    <div class="section-nav" id="sectionNav"></div>
+
+    <!-- View 1: Tables Grid -->
+    <div class="tables-grid" id="tablesGrid"></div>
+
+    <!-- View 2: Live Kitchen Tickets Feed -->
+    <div class="tickets-view" id="ticketsView"></div>
+  </main>
+
+  <!-- Table Detail Modal -->
+  <div class="modal-overlay" id="tableModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <h2 class="modal-title" id="modalTableTitle">Masa Detayı</h2>
+          <span id="modalTableStatusBadge" class="table-tag">Dolu</span>
+        </div>
+        <div class="modal-subnav">
+          <button type="button" class="modal-tab-btn active" id="modalTabBill" onclick="switchModalTab('bill')">
+            📋 Hesap & Ödeme
+          </button>
+          <button type="button" class="modal-tab-btn" id="modalTabCatalog" onclick="switchModalTab('catalog')">
+            🍽️ Sipariş Ekle (Katalog)
+            <span id="cashierCartBadge" class="badge-count" style="display:none;">0</span>
+          </button>
+        </div>
+        <button type="button" class="modal-close" onclick="closeTableModal()">&times;</button>
+      </div>
+
+      <!-- VIEW 1: BILL & PAYMENT -->
+      <div class="modal-body" id="modalBillView">
+        <!-- Left: Current Table Bill -->
+        <div class="bill-section">
+          <!-- Account Opening & Waiter Info -->
+          <div style="background:#1d150f; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+            <div>Hesap Açan Garson: <strong id="modalAccountOpenedBy" style="color:var(--accent);">—</strong></div>
+            <div style="color:var(--text-muted);">Açılış: <span id="modalAccountOpenedAt">—</span></div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 16px; color: var(--accent);">Mevcut Siparişler</h3>
+            <button type="button" class="btn btn-primary" style="padding: 6px 14px; font-size: 13px;" onclick="switchModalTab('catalog')">
+              + Yeni Sipariş Ekle
+            </button>
+          </div>
+          <div style="max-height: 420px; overflow-y: auto;">
+            <table class="bill-table">
+              <thead>
+                <tr>
+                  <th style="width: 28px;"></th>
+                  <th>Ürün & Garson</th>
+                  <th style="text-align: center; width: 140px;">Ödenecek Adet</th>
+                  <th style="text-align: right; width: 65px;">Fiyat</th>
+                  <th style="text-align: right; width: 75px;">Tutar</th>
+                  <th style="text-align: center; width: 35px;">Sil</th>
+                </tr>
+              </thead>
+              <tbody id="billItemsBody">
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Sipariş yok.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Actions & Payment Panel -->
+        <div class="actions-section">
+          <div class="summary-box">
+            <div class="summary-row"><span>Toplam Tutar:</span><span id="sumTotal">0,00 ₺</span></div>
+            <div class="summary-row"><span>Ödenen Tutar:</span><span id="sumPaid">0,00 ₺</span></div>
+            <div class="summary-row big"><span>Kalan Bakiye:</span><span id="sumRemaining">0,00 ₺</span></div>
+          </div>
+
+          <!-- Payment Box -->
+          <div class="action-group">
+            <label>ÖDEME AL / PARÇALI ÖDE</label>
+            <div class="action-row">
+              <input type="number" id="payAmountInput" class="input-ctrl" placeholder="Ödenecek Tutar" step="0.01" />
+              <button type="button" class="btn btn-secondary" onclick="fillExactRemaining()" style="white-space: nowrap; font-size: 12px;">Tamamı</button>
+            </div>
+            <div class="action-row" style="margin-top: 4px;">
+              <button type="button" class="btn btn-success" style="flex: 1;" onclick="processPayment('Nakit')">💵 Nakit</button>
+              <button type="button" class="btn btn-primary" style="flex: 1;" onclick="processPayment('Kredi Karti')">💳 Kredi Kartı</button>
+            </div>
+          </div>
+
+          <!-- Table Transfer & Merge Buttons -->
+          <div class="action-group" style="padding-top: 10px; border-top: 1px solid var(--border);">
+            <label>MASA İŞLEMLERİ</label>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary" style="flex: 1; font-size: 13px;" onclick="openVisualTransferModal()">🔄 Masa Aktar</button>
+              <button type="button" class="btn btn-secondary" style="flex: 1; font-size: 13px;" onclick="openVisualMergeModal()">🔗 Masa Birleştir</button>
+            </div>
+          </div>
+
+          <!-- Print Customer Bill -->
+          <div style="padding-top: 6px;">
+            <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="printCustomerBill()">🖨️ Hesap Fişi Yazdır</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: PRODUCT CATALOG & ORDER ENTRY -->
+      <div class="modal-catalog-body" id="modalCatalogView" style="display: none;">
+        <!-- Left / Catalog side -->
+        <div class="catalog-left">
+          <!-- Categories Bar & Search Input -->
+          <div class="catalog-top-controls">
+            <div id="catalogCategoryTabs" class="catalog-categories"></div>
+            <div class="catalog-search-box">
+              <input type="text" id="catalogSearch" class="input-ctrl" placeholder="🔍 Ürün ara..." oninput="onCatalogSearch()" />
+            </div>
+          </div>
+
+          <!-- Products Grid -->
+          <div id="catalogProductsGrid" class="catalog-products-grid"></div>
+        </div>
+
+        <!-- Right / Cart side -->
+        <div class="catalog-right">
+          <div class="catalog-cart-header">
+            <h3>🛒 Yeni Sipariş Sepeti</h3>
+            <span id="catalogTableTargetName" style="font-size: 13px; color: var(--accent); font-weight: 700;"></span>
+          </div>
+
+          <!-- Cart items list -->
+          <div id="cashierCartList" class="cashier-cart-list">
+            <div class="cart-empty-msg">Katalogdan ürün seçerek sepete ekleyin.</div>
+          </div>
+
+          <!-- Order note & print toggle -->
+          <div class="cashier-cart-controls">
+            <div class="quick-notes-bar">
+              <span class="note-chip" onclick="appendCashierNote('Sade')">Sade</span>
+              <span class="note-chip" onclick="appendCashierNote('1x Az Şekerli')">1x Az Şekerli</span>
+              <span class="note-chip" onclick="appendCashierNote('2x Az Şekerli')">2x Az Şekerli</span>
+              <span class="note-chip" onclick="appendCashierNote('1x Orta')">1x Orta</span>
+              <span class="note-chip" onclick="appendCashierNote('2x Orta')">2x Orta</span>
+              <span class="note-chip" onclick="appendCashierNote('Şekerli')">Şekerli</span>
+              <span class="note-chip" onclick="appendCashierNote('Sütlü')">Sütlü</span>
+              <span class="note-chip" onclick="appendCashierNote('Buzsuz')">Buzsuz</span>
+              <span class="note-chip" onclick="appendCashierNote('Paket')">Paket</span>
+              <span class="note-chip clear" onclick="clearCashierNote()">Temizle ✕</span>
+            </div>
+            <input type="text" id="cashierOrderNote" class="input-ctrl" placeholder="Sipariş notu (örn: 1 az şekerli, 1 orta)..." />
+            <label class="catalog-print-toggle">
+              <input type="checkbox" id="cashierPrintKitchen" checked />
+              <span>🖨️ Mutfak fişi yazdırılsın</span>
+            </label>
+          </div>
+
+          <!-- Total & actions -->
+          <div class="cashier-cart-footer">
+            <div class="summary-box" style="padding: 10px 12px; margin-bottom: 10px;">
+              <div class="summary-row">
+                <span>Ürün Sayısı:</span>
+                <span id="cashierCartTotalCount">0 adet</span>
+              </div>
+              <div class="summary-row big">
+                <span>Tutar:</span>
+                <span id="cashierCartTotalAmount">0,00 ₺</span>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary" onclick="clearCashierCart()" style="flex: 1;">Temizle</button>
+              <button type="button" class="btn btn-success" id="btnSubmitCashierOrder" onclick="submitCashierOrder()" style="flex: 2;" disabled>
+                ✅ Masaya Ekle
+              </button>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="switchModalTab('bill')" style="width: 100%; margin-top: 8px; font-size: 12px;">
+              ← Masanın Mevcut Hesabına Dön
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual Table Action Modal (Transfer / Merge) -->
+  <div class="modal-overlay" id="tableActionModal" style="display: none;">
+    <div class="modal visual-action-modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="actionModalTitle">Masa Seçin</h2>
+        <button type="button" class="modal-close" onclick="closeTableActionModal()">&times;</button>
+      </div>
+      <div style="padding: 16px 20px;">
+        <div id="actionModalInstruction" style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;"></div>
+        <!-- Section Tabs -->
+        <div class="catalog-categories" id="actionModalSectionTabs"></div>
+        <!-- Tables Grid -->
+        <div class="vat-grid" id="actionModalGrid"></div>
+        <!-- Action Buttons -->
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px;">
+          <button type="button" class="btn btn-secondary" onclick="closeTableActionModal()">İptal</button>
+          <button type="button" class="btn btn-primary" id="btnConfirmTableAction" disabled onclick="confirmTableAction()">Onayla</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manager PIN Modal -->
+  <div class="modal-overlay" id="managerPinModal" style="display: none;">
+    <div class="modal" style="max-width: 440px; text-align: center;">
+      <div class="modal-header">
+        <h2 class="modal-title">🔐 Mobil Yönetici İzni</h2>
+        <button type="button" class="modal-close" onclick="closeManagerPinModal()">&times;</button>
+      </div>
+      <div style="padding: 24px 20px;">
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">
+          Telefonda garson uygulamasından <strong>"Yönetici Girişi"</strong> butonuna tıklandığında aşağıdaki 4 haneli PIN girilerek kasa ekranına tam yetkiyle erişilebilir:
+        </p>
+        <div style="background: #18110b; border: 2px dashed #b388ff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <div style="font-size: 12px; color: #b388ff; font-weight: 700; margin-bottom: 4px;">AKTİF YÖNETİCİ PIN KODU</div>
+          <div id="managerPinDisplay" style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #fff;">1234</div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+          <input type="text" id="newManagerPinInput" class="input-ctrl" placeholder="Yeni 4 Haneli PIN" maxlength="6" style="text-align: center; font-size: 16px; letter-spacing: 4px;" />
+          <button type="button" class="btn btn-primary" onclick="updateManagerPin()">PIN'i Güncelle</button>
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); text-align: left; line-height: 1.4;">
+          💡 Acil durumlarda telefonunuzdan kasa işlemlerini (ödeme alma, adisyon iptal, masa aktarma/birleştirme vb.) bu PIN ile güvenle yapabilirsiniz.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Code Modal for Waiter App -->
+  <div class="modal-overlay" id="qrModal" style="display:none;">
+    <div class="modal" style="max-width: 440px; text-align: center;">
+      <div class="modal-header">
+        <h2 class="modal-title">📱 Garson Telefonu Bağla</h2>
+        <button type="button" class="modal-close" onclick="closeQrModal()">&times;</button>
+      </div>
+      <div style="padding: 24px 20px;">
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">
+          iPhone veya Android kameranızı aşağıdaki QR koda tutarak Garson Sipariş Ekranını açabilirsiniz:
+        </p>
+        <div style="background: #ffffff; padding: 14px; border-radius: 14px; display: inline-block; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+          <img id="qrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=https%3A%2F%2Fhenchman-ninth-shanty.ngrok-free.dev%2Fgarson%2F" alt="QR Code" width="240" height="240" style="display: block;" />
+        </div>
+        <div style="background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 13px; color: var(--accent); word-break: break-all; margin-bottom: 16px;">
+          https://henchman-ninth-shanty.ngrok-free.dev/garson/
+        </div>
+        <div style="text-align: left; background: #261911; padding: 12px 16px; border-radius: 8px; border-left: 3px solid var(--accent); font-size: 13px; line-height: 1.5; color: #eedfd2;">
+          <strong>💡 İpucu (Her Seferinde Uğraşmamak İçin):</strong><br>
+          Safari açıldığında alttaki <strong>Paylaş</strong> simgesine dokunun ve <strong>"Ana Ekrana Ekle"</strong> seçeneğini seçin. Artık telefonunuzun ana ekranında tıpkı App Store uygulaması gibi sabit bir ikon oluşacaktır!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Area -->
+  <div id="printArea" class="print-area"></div>
+
+  <script src="/station/signalr.min.js"></script>
+  <script>
+    let tables = [];
+    let menu = [];
+    let activeTable = null;
+    let currentAccount = null;
+    const seenTickets = new Set();
+
+    function openQrModal() {
+      document.getElementById("qrModal").style.display = "flex";
+    }
+    function closeQrModal() {
+      document.getElementById("qrModal").style.display = "none";
+    }
+
+    function money(n) {
+      return Number(n || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" });
+    }
+
+    let currentSection = "Sol";
+
+    function switchView(view) {
+      document.getElementById("tablesGrid").style.display = view === "tables" ? "grid" : "none";
+      document.getElementById("sectionNav").style.display = view === "tables" ? "flex" : "none";
+      document.getElementById("ticketsView").style.display = view === "tickets" ? "grid" : "none";
+      document.getElementById("tabTables").className = "nav-tab " + (view === "tables" ? "active" : "");
+      document.getElementById("tabTickets").className = "nav-tab " + (view === "tickets" ? "active" : "");
+    }
+
+    function setSection(sec) {
+      currentSection = sec;
+      renderSectionNav();
+      renderTables();
+    }
+
+    function renderSectionNav() {
+      const nav = document.getElementById("sectionNav");
+      if (!nav) return;
+
+      const sections = ["Sol", "Sağ", "Dış", "İç", "Kapı"];
+      nav.innerHTML = sections.map(sec => {
+        const secTables = tables.filter(t => t.section === sec);
+        const occ = secTables.filter(t => t.isOccupied).length;
+        const countText = `${occ}/${secTables.length}`;
+
+        const isActive = currentSection === sec;
+        return `
+          <button type="button" class="section-btn ${isActive ? 'active' : ''}" onclick="setSection('${sec}')">
+            <span>${sec}</span>
+            <span class="section-badge">${countText}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    // Load tables
+    async function loadTables() {
+      try {
+        const res = await fetch("/api/tables");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        tables = await res.json();
+        renderTables();
+      } catch (e) {
+        console.error("loadTables error:", e);
+      }
+    }
+
+    // Load menu for cashier catalog
+    async function loadMenu() {
+      try {
+        const res = await fetch("/api/menu");
+        if (!res.ok) return;
+        menu = await res.json();
+        renderCatalogCategories();
+        renderCatalogProducts();
+      } catch (e) {
+        console.error("loadMenu error:", e);
+      }
+    }
+
+    function renderTables() {
+      renderSectionNav();
+      const grid = document.getElementById("tablesGrid");
+      grid.innerHTML = "";
+
+      let occupiedCount = 0;
+      let totalOpenBalance = 0;
+
+      tables.forEach(t => {
+        if (t.isOccupied) {
+          occupiedCount++;
+          totalOpenBalance += t.remainingAmount;
+        }
+      });
+
+      const displayTables = tables.filter(t => t.section === currentSection);
+
+      if (displayTables.length === 0) {
+        grid.innerHTML = '<div style="color:var(--text-muted); padding:30px; grid-column:1/-1; text-align:center;">Bu bölümde masa bulunmuyor.</div>';
+      }
+
+      displayTables.forEach(t => {
+        const card = document.createElement("div");
+        card.className = "table-card " + (t.isOccupied ? "occupied" : "empty");
+        card.onclick = () => openTableModal(t.id);
+
+        let timeStr = "";
+        if (t.openedAt) {
+          const diffMin = Math.max(0, Math.round((new Date() - new Date(t.openedAt)) / 60000));
+          timeStr = diffMin < 60 ? `${diffMin} dk önce` : `${Math.floor(diffMin/60)} sa ${diffMin%60} dk`;
+        }
+
+        card.innerHTML = `
+          <div class="table-card-top">
+            <h3 class="table-no">${t.name}</h3>
+            <span class="table-tag">${t.isOccupied ? "Dolu" : "Boş"}</span>
+          </div>
+          <div class="table-card-bottom">
+            <div class="table-price">${t.isOccupied ? money(t.remainingAmount) : "—"}</div>
+            <div class="table-meta">
+              ${t.isOccupied ? `${t.itemCount} ürün · ${timeStr}` : t.section}
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.getElementById("statOccupied").textContent = occupiedCount;
+      document.getElementById("statTotalTables").textContent = tables.length;
+      document.getElementById("statTotal").textContent = money(totalOpenBalance);
+    }
+
+    // Modal State & Catalog
+    let activeModalTab = "bill";
+    let cashierCart = {}; // productId -> { product, quantity }
+    let selectedCatalogCategory = "featured"; // Default to featured staples!
+    let catalogSearchTerm = "";
+    let itemPayQuantities = {}; // orderItemId -> selected quantity to pay
+
+    function switchModalTab(tab) {
+      activeModalTab = tab;
+      const btnBill = document.getElementById("modalTabBill");
+      const btnCat = document.getElementById("modalTabCatalog");
+      const viewBill = document.getElementById("modalBillView");
+      const viewCat = document.getElementById("modalCatalogView");
+
+      if (btnBill) btnBill.className = "modal-tab-btn " + (tab === "bill" ? "active" : "");
+      if (btnCat) btnCat.className = "modal-tab-btn " + (tab === "catalog" ? "active" : "");
+      if (viewBill) viewBill.style.display = tab === "bill" ? "grid" : "none";
+      if (viewCat) viewCat.style.display = tab === "catalog" ? "grid" : "none";
+
+      if (tab === "catalog") {
+        const targetName = document.getElementById("catalogTableTargetName");
+        if (targetName && activeTable) targetName.textContent = activeTable.name;
+        renderCatalogCategories();
+        renderCatalogProducts();
+        renderCashierCart();
+      }
+    }
+
+    function renderCatalogCategories() {
+      const container = document.getElementById("catalogCategoryTabs");
+      if (!container || !menu) return;
+
+      let html = `
+        <button type="button" class="catalog-cat-btn ${selectedCatalogCategory === 'featured' ? 'active' : ''}" onclick="selectCatalogCategory('featured')">
+          ⭐ Öne Çıkanlar
+        </button>
+      `;
+
+      menu.forEach(cat => {
+        const isActive = selectedCatalogCategory === cat.id;
+        html += `
+          <button type="button" class="catalog-cat-btn ${isActive ? 'active' : ''}" onclick="selectCatalogCategory(${cat.id})">
+            ${cat.name} (${cat.products ? cat.products.length : 0})
+          </button>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function selectCatalogCategory(catId) {
+      selectedCatalogCategory = catId;
+      renderCatalogCategories();
+      renderCatalogProducts();
+    }
+
+    function onCatalogSearch() {
+      const input = document.getElementById("catalogSearch");
+      catalogSearchTerm = (input ? input.value : "").trim().toLowerCase();
+      renderCatalogProducts();
+    }
+
+    function renderCatalogProducts() {
+      const grid = document.getElementById("catalogProductsGrid");
+      if (!grid || !menu) return;
+
+      let allProducts = [];
+      menu.forEach(c => {
+        if (c.products) allProducts = allProducts.concat(c.products);
+      });
+
+      let products = [];
+      // If user typed a search term, search across ALL categories!
+      if (catalogSearchTerm) {
+        products = allProducts.filter(p => p.name.toLowerCase().includes(catalogSearchTerm));
+      } else {
+        if (selectedCatalogCategory === "featured") {
+          products = allProducts.filter(p => p.isFeatured);
+          if (products.length === 0) products = allProducts.slice(0, 8);
+        } else {
+          const cat = menu.find(c => c.id === selectedCatalogCategory);
+          if (cat && cat.products) products = cat.products;
+        }
+      }
+
+      if (products.length === 0) {
+        grid.innerHTML = '<div style="color:var(--text-muted); padding:30px; grid-column:1/-1; text-align:center;">Ürün bulunamadı.</div>';
+        return;
+      }
+
+      grid.innerHTML = products.map(p => {
+        const inCartQty = cashierCart[p.id]?.quantity || 0;
+        const isInCart = inCartQty > 0;
+        return `
+          <div class="cat-prod-card ${isInCart ? 'in-cart' : ''}" onclick="addCashierCartItem(${p.id}, 1)">
+            ${isInCart ? `<span class="cat-prod-qty-badge">${inCartQty}x</span>` : ''}
+            <div class="cat-prod-name">${p.name}</div>
+            <div class="cat-prod-price">${money(p.price)}</div>
+            <div class="cat-quick-chips" onclick="event.stopPropagation()">
+              <button type="button" class="chip-qty" onclick="addCashierCartItem(${p.id}, 1)">+1</button>
+              <button type="button" class="chip-qty" onclick="addCashierCartItem(${p.id}, 2)">+2</button>
+              <button type="button" class="chip-qty" onclick="addCashierCartItem(${p.id}, 5)">+5</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addCashierCartItem(productId, delta) {
+      let item = cashierCart[productId];
+      if (!item && delta > 0) {
+        let prod = null;
+        for (const c of menu) {
+          prod = (c.products || []).find(p => p.id === productId);
+          if (prod) break;
+        }
+        if (prod) {
+          cashierCart[productId] = { product: prod, quantity: delta };
+        }
+      } else if (item) {
+        item.quantity += delta;
+        if (item.quantity <= 0) {
+          delete cashierCart[productId];
+        }
+      }
+      renderCatalogProducts();
+      renderCashierCart();
+    }
+
+    function removeCashierCartItem(productId) {
+      delete cashierCart[productId];
+      renderCatalogProducts();
+      renderCashierCart();
+    }
+
+    function clearCashierCart() {
+      cashierCart = {};
+      const noteInput = document.getElementById("cashierOrderNote");
+      if (noteInput) noteInput.value = "";
+      renderCatalogProducts();
+      renderCashierCart();
+    }
+
+    function appendCashierNote(text) {
+      const input = document.getElementById("cashierOrderNote");
+      if (!input) return;
+      const current = input.value.trim();
+      if (!current) {
+        input.value = text;
+      } else {
+        input.value = current + ", " + text;
+      }
+    }
+
+    function clearCashierNote() {
+      const input = document.getElementById("cashierOrderNote");
+      if (input) input.value = "";
+    }
+
+    function renderCashierCart() {
+      const list = document.getElementById("cashierCartList");
+      const countEl = document.getElementById("cashierCartTotalCount");
+      const amountEl = document.getElementById("cashierCartTotalAmount");
+      const btnSubmit = document.getElementById("btnSubmitCashierOrder");
+      const badge = document.getElementById("cashierCartBadge");
+
+      const items = Object.values(cashierCart);
+      const totalCount = items.reduce((sum, i) => sum + i.quantity, 0);
+      const totalAmount = items.reduce((sum, i) => sum + (i.product.price * i.quantity), 0);
+
+      if (badge) {
+        badge.style.display = totalCount > 0 ? "inline-block" : "none";
+        badge.textContent = totalCount;
+      }
+
+      if (countEl) countEl.textContent = `${totalCount} adet`;
+      if (amountEl) amountEl.textContent = money(totalAmount);
+      if (btnSubmit) btnSubmit.disabled = totalCount === 0;
+
+      if (!list) return;
+
+      if (items.length === 0) {
+        list.innerHTML = '<div class="cart-empty-msg">Katalogdan ürün seçerek sepete ekleyin.</div>';
+        return;
+      }
+
+      list.innerHTML = items.map(i => {
+        const lineTotal = i.product.price * i.quantity;
+        return `
+          <div class="cart-item-row">
+            <div class="cart-item-info">
+              <div class="cart-item-name">${i.product.name}</div>
+              <div class="cart-item-unit">${money(i.product.price)}</div>
+            </div>
+            <div class="cart-item-qty-box">
+              <button type="button" class="btn-cart-qty" onclick="addCashierCartItem(${i.product.id}, -1)">−</button>
+              <span class="cart-item-qty-num">${i.quantity}</span>
+              <button type="button" class="btn-cart-qty" onclick="addCashierCartItem(${i.product.id}, 1)">+</button>
+              <span class="cart-item-total">${money(lineTotal)}</span>
+              <button type="button" class="btn-cart-del" onclick="removeCashierCartItem(${i.product.id})">&times;</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function submitCashierOrder() {
+      if (!activeTable) return;
+      const items = Object.values(cashierCart).map(x => ({
+        productId: x.product.id,
+        quantity: x.quantity
+      }));
+      if (items.length === 0) return;
+
+      const btn = document.getElementById("btnSubmitCashierOrder");
+      const noteInput = document.getElementById("cashierOrderNote");
+      const printKitchenChk = document.getElementById("cashierPrintKitchen");
+      const note = (noteInput ? noteInput.value : "").trim();
+      const shouldPrint = printKitchenChk ? printKitchenChk.checked : true;
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Ekleniyor...";
+      }
+
+      try {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tableId: activeTable.id,
+            createdBy: "Kasa",
+            note: note || "Kasadan eklendi",
+            items: items
+          })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || "Sipariş verilemedi");
+        }
+
+        const ticket = await res.json();
+        if (shouldPrint && typeof printKitchenTicket === "function") {
+          printKitchenTicket(ticket);
+        }
+
+        clearCashierCart();
+        await refreshModalAccount(activeTable.id);
+        await loadTables();
+        switchModalTab("bill");
+      } catch (e) {
+        alert("Sipariş eklenemedi: " + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = "✅ Masaya Ekle";
+        }
+      }
+    }
+
+    // Modal Details
+    async function openTableModal(tableId) {
+      activeTable = tables.find(t => t.id === tableId);
+      if (!activeTable) return;
+
+      document.getElementById("modalTableTitle").textContent = `${activeTable.name} (Masa ${activeTable.number})`;
+      
+      const badge = document.getElementById("modalTableStatusBadge");
+      if (badge) {
+        badge.textContent = activeTable.isOccupied ? "Dolu" : "Boş";
+        badge.className = "table-tag " + (activeTable.isOccupied ? "occupied" : "empty");
+      }
+
+      clearCashierCart();
+      document.getElementById("tableModal").classList.add("open");
+
+      await refreshModalAccount(tableId);
+
+      // If table is empty, open catalog directly so cashier can order immediately!
+      // If table already has orders, show existing bill first!
+      if (activeTable.isOccupied) {
+        switchModalTab("bill");
+      } else {
+        switchModalTab("catalog");
+      }
+    }
+
+    function closeTableModal() {
+      document.getElementById("tableModal").classList.remove("open");
+      activeTable = null;
+      currentAccount = null;
+      itemPayQuantities = {};
+      clearCashierCart();
+    }
+
+    async function refreshModalAccount(tableId) {
+      try {
+        const res = await fetch(`/api/tables/${tableId}/account`);
+        currentAccount = await res.json();
+
+        const openedByEl = document.getElementById("modalAccountOpenedBy");
+        const openedAtEl = document.getElementById("modalAccountOpenedAt");
+        if (openedByEl) openedByEl.textContent = currentAccount.openedBy || "Garson";
+        if (openedAtEl) {
+          openedAtEl.textContent = currentAccount.openedAt ? new Date(currentAccount.openedAt).toLocaleTimeString("tr-TR") : "—";
+        }
+
+        renderBillItems();
+      } catch (e) {
+        console.error("refreshModalAccount error:", e);
+      }
+    }
+
+    function renderBillItems() {
+      const tbody = document.getElementById("billItemsBody");
+      tbody.innerHTML = "";
+      itemPayQuantities = {};
+
+      if (!currentAccount || !currentAccount.items || currentAccount.items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Bu masada henüz sipariş bulunmuyor.</td></tr>`;
+        document.getElementById("sumTotal").textContent = money(0);
+        document.getElementById("sumPaid").textContent = money(0);
+        document.getElementById("sumRemaining").textContent = money(0);
+        document.getElementById("payAmountInput").value = "";
+        return;
+      }
+
+      currentAccount.items.forEach(i => {
+        const tr = document.createElement("tr");
+        const remainingQty = i.quantity - i.paidQuantity;
+        itemPayQuantities[i.id] = remainingQty > 0 ? remainingQty : 0;
+
+        tr.innerHTML = `
+          <td>
+            <input type="checkbox" class="item-chk" id="chk_item_${i.id}" data-id="${i.id}" data-price="${i.unitPrice}" onchange="onItemCheckboxChange(${i.id})" ${remainingQty <= 0 ? 'disabled' : ''} />
+          </td>
+          <td>
+            <strong style="font-size: 14px;">${i.productName}</strong>
+            <div style="font-size: 11px; color: var(--accent); margin-top: 2px;">
+              👤 Giren: <strong>${i.createdBy || 'Garson'}</strong> · ${new Date(i.createdAt).toLocaleTimeString("tr-TR")}
+            </div>
+          </td>
+          <td style="text-align: center;">
+            ${remainingQty > 0 ? `
+              <div class="pay-stepper-box">
+                <button type="button" class="btn-step" onclick="changeItemPayQty(${i.id}, -1)">−</button>
+                <span class="pay-qty-input" id="payQtyDisplay_${i.id}">${itemPayQuantities[i.id]}</span>
+                <button type="button" class="btn-step" onclick="changeItemPayQty(${i.id}, 1)">+</button>
+                <span style="font-size: 10px; color: var(--text-muted);">/ ${remainingQty}</span>
+              </div>
+            ` : `<span style="font-size: 11px; color: #9ddea3; font-weight: 700;">Tamamı Ödendi (${i.paidQuantity}x)</span>`}
+          </td>
+          <td style="text-align: right;">${money(i.unitPrice)}</td>
+          <td style="text-align: right; font-weight: 700;">${money(i.lineTotal)}</td>
+          <td style="text-align: center;">
+            <button type="button" class="btn-del" onclick="deleteOrderItem(${i.id})">−</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("sumTotal").textContent = money(currentAccount.totalAmount);
+      document.getElementById("sumPaid").textContent = money(currentAccount.paidAmount);
+      document.getElementById("sumRemaining").textContent = money(currentAccount.remainingAmount);
+      document.getElementById("payAmountInput").value = currentAccount.remainingAmount.toFixed(2);
+    }
+
+    function changeItemPayQty(itemId, delta) {
+      if (!currentAccount || !currentAccount.items) return;
+      const item = currentAccount.items.find(x => x.id === itemId);
+      if (!item) return;
+      const maxQty = item.quantity - item.paidQuantity;
+      let currentVal = itemPayQuantities[itemId] || maxQty;
+      currentVal = Math.max(1, Math.min(maxQty, currentVal + delta));
+      itemPayQuantities[itemId] = currentVal;
+
+      const displayEl = document.getElementById(`payQtyDisplay_${itemId}`);
+      if (displayEl) displayEl.textContent = currentVal;
+
+      // Auto-check this row
+      const chk = document.getElementById(`chk_item_${itemId}`);
+      if (chk) chk.checked = true;
+
+      calculateCheckedTotal();
+    }
+
+    function onItemCheckboxChange(itemId) {
+      calculateCheckedTotal();
+    }
+
+    function calculateCheckedTotal() {
+      let sum = 0;
+      let hasChecked = false;
+      document.querySelectorAll(".item-chk:checked").forEach(chk => {
+        hasChecked = true;
+        const id = parseInt(chk.getAttribute("data-id"));
+        const price = parseFloat(chk.getAttribute("data-price")) || 0;
+        const qty = itemPayQuantities[id] || 1;
+        sum += price * qty;
+      });
+
+      if (hasChecked && sum > 0) {
+        document.getElementById("payAmountInput").value = sum.toFixed(2);
+      } else if (currentAccount) {
+        document.getElementById("payAmountInput").value = currentAccount.remainingAmount.toFixed(2);
+      }
+    }
+
+    function fillExactRemaining() {
+      if (!currentAccount) return;
+      document.querySelectorAll(".item-chk").forEach(chk => chk.checked = false);
+      document.getElementById("payAmountInput").value = currentAccount.remainingAmount.toFixed(2);
+    }
+
+    // Delete item from table
+    async function deleteOrderItem(itemId) {
+      if (!confirm("Bu ürünü masadan silmek/azaltmak istiyor musunuz?")) return;
+      try {
+        const res = await fetch(`/api/order-items/${itemId}`, { method: "DELETE" });
+        if (!res.ok) throw new Error(await res.text());
+        await refreshModalAccount(activeTable.id);
+        await loadTables();
+      } catch (e) {
+        alert("Silinemedi: " + e.message);
+      }
+    }
+
+    // Payment
+    async function processPayment(method) {
+      if (!activeTable || !currentAccount) return;
+      const amount = parseFloat(document.getElementById("payAmountInput").value);
+      if (!amount || amount <= 0) {
+        alert("Lütfen geçerli bir ödeme tutarı girin.");
+        return;
+      }
+
+      // Collect checked items if partial item payment
+      const itemsToPay = [];
+      document.querySelectorAll(".item-chk:checked").forEach(chk => {
+        const id = parseInt(chk.getAttribute("data-id"));
+        const qty = itemPayQuantities[id] || 1;
+        itemsToPay.push({
+          orderItemId: id,
+          quantity: qty
+        });
+      });
+
+      try {
+        const res = await fetch(`/api/tables/${activeTable.id}/pay`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount,
+            paymentMethod: method,
+            closeTableIfFullyPaid: true,
+            itemsToPay: itemsToPay.length > 0 ? itemsToPay : null,
+            note: `${method} ödeme`
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Ödeme alınamadı");
+
+        if (data.isClosed) {
+          alert(`Masa hesabı başarıyla kapatıldı! Toplam ödenen: ${money(amount)}`);
+          closeTableModal();
+        } else {
+          alert(`Ödeme alındı: ${money(amount)}. Kalan bakiye: ${money(data.remaining)}`);
+          await refreshModalAccount(activeTable.id);
+        }
+        await loadTables();
+      } catch (e) {
+        alert("Ödeme hatası: " + e.message);
+      }
+    }
+
+    // Visual Section-based Table Actions (Transfer / Merge)
+    let tableActionType = null; // 'transfer' or 'merge'
+    let tableActionSection = 'Sol';
+    let tableActionSelectedTargetId = null;
+
+    function openVisualTransferModal() {
+      if (!activeTable) return;
+      tableActionType = 'transfer';
+      tableActionSection = activeTable.section || 'Sol';
+      tableActionSelectedTargetId = null;
+
+      document.getElementById("actionModalTitle").textContent = `🔄 Masa Aktar: ${activeTable.name} → ?`;
+      document.getElementById("actionModalInstruction").innerHTML = `Lütfen <strong>${activeTable.name}</strong> masasındaki tüm açık siparişleri aktarmak istediğiniz <strong>BOŞ</strong> masayı seçin:`;
+      const btn = document.getElementById("btnConfirmTableAction");
+      btn.disabled = true;
+      btn.textContent = "Aktarmayı Onayla";
+
+      renderTableActionSections();
+      renderTableActionGrid();
+      document.getElementById("tableActionModal").style.display = "flex";
+    }
+
+    function openVisualMergeModal() {
+      if (!activeTable) return;
+      tableActionType = 'merge';
+      tableActionSection = activeTable.section || 'Sol';
+      tableActionSelectedTargetId = null;
+
+      document.getElementById("actionModalTitle").textContent = `🔗 Masa Birleştir: ${activeTable.name} + ?`;
+      document.getElementById("actionModalInstruction").innerHTML = `Lütfen <strong>${activeTable.name}</strong> masasının hesabını birleştirmek istediğiniz <strong>DOLU</strong> masayı seçin:`;
+      const btn = document.getElementById("btnConfirmTableAction");
+      btn.disabled = true;
+      btn.textContent = "Birleştirmeyi Onayla";
+
+      renderTableActionSections();
+      renderTableActionGrid();
+      document.getElementById("tableActionModal").style.display = "flex";
+    }
+
+    function closeTableActionModal() {
+      document.getElementById("tableActionModal").style.display = "none";
+      tableActionType = null;
+      tableActionSelectedTargetId = null;
+    }
+
+    function setTableActionSection(sec) {
+      tableActionSection = sec;
+      renderTableActionSections();
+      renderTableActionGrid();
+    }
+
+    function renderTableActionSections() {
+      const container = document.getElementById("actionModalSectionTabs");
+      if (!container) return;
+      const sections = ["Sol", "Sağ", "Dış", "İç", "Kapı"];
+      container.innerHTML = sections.map(sec => {
+        const secTables = tables.filter(t => t.section === sec && t.id !== activeTable.id);
+        const eligibleCount = tableActionType === 'transfer' 
+          ? secTables.filter(t => !t.isOccupied).length 
+          : secTables.filter(t => t.isOccupied).length;
+        const isActive = tableActionSection === sec;
+        return `
+          <button type="button" class="catalog-cat-btn ${isActive ? 'active' : ''}" onclick="setTableActionSection('${sec}')">
+            ${sec} (${eligibleCount})
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderTableActionGrid() {
+      const grid = document.getElementById("actionModalGrid");
+      if (!grid) return;
+      const secTables = tables.filter(t => t.section === tableActionSection && t.id !== activeTable.id);
+      const eligibleTables = tableActionType === 'transfer'
+        ? secTables.filter(t => !t.isOccupied)
+        : secTables.filter(t => t.isOccupied);
+
+      if (eligibleTables.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; color: var(--text-muted); text-align: center; padding: 30px;">
+          ${tableActionType === 'transfer' ? 'Bu bölümde boş masa bulunmuyor.' : 'Bu bölümde birleştirilebilecek dolu masa bulunmuyor.'}
+        </div>`;
+        return;
+      }
+
+      grid.innerHTML = eligibleTables.map(t => {
+        const isSelected = tableActionSelectedTargetId === t.id;
+        return `
+          <div class="vat-card ${isSelected ? 'selected' : ''}" onclick="selectTableActionTarget(${t.id})">
+            <div class="vat-name">${t.name}</div>
+            <div class="vat-status ${t.isOccupied ? 'occupied' : 'empty'}">${t.isOccupied ? 'Dolu' : 'Boş'}</div>
+            <div class="vat-balance">${t.isOccupied ? money(t.remainingAmount) : t.section}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectTableActionTarget(targetId) {
+      tableActionSelectedTargetId = targetId;
+      const targetTable = tables.find(t => t.id === targetId);
+      const btn = document.getElementById("btnConfirmTableAction");
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = tableActionType === 'transfer' 
+          ? `→ ${targetTable?.name || ''} Masasına Aktar` 
+          : `+ ${targetTable?.name || ''} Masası ile Birleştir`;
+      }
+      renderTableActionGrid();
+    }
+
+    async function confirmTableAction() {
+      if (!activeTable || !tableActionSelectedTargetId) return;
+      const targetTable = tables.find(t => t.id === tableActionSelectedTargetId);
+      if (!targetTable) return;
+
+      if (tableActionType === 'transfer') {
+        try {
+          const res = await fetch(`/api/tables/${activeTable.id}/transfer`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ targetTableId: targetTable.id })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Aktarılamadı");
+          alert(data.message);
+          closeTableActionModal();
+          closeTableModal();
+          await loadTables();
+        } catch (e) {
+          alert("Aktarma hatası: " + e.message);
+        }
+      } else if (tableActionType === 'merge') {
+        if (!confirm(`${activeTable.name} masasının hesabı ${targetTable.name} masası ile birleştirilecek. Onaylıyor musunuz?`)) return;
+        try {
+          const res = await fetch(`/api/tables/${activeTable.id}/merge`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ targetTableId: targetTable.id })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Birleştirilemedi");
+          alert(data.message);
+          closeTableActionModal();
+          closeTableModal();
+          await loadTables();
+        } catch (e) {
+          alert("Birleştirme hatası: " + e.message);
+        }
+      }
+    }
+
+    // Manager PIN Modal
+    async function openManagerPinModal() {
+      try {
+        const res = await fetch("/api/auth/manager-pin");
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById("managerPinDisplay").textContent = data.pin || "1234";
+        }
+      } catch (e) {}
+      document.getElementById("managerPinModal").style.display = "flex";
+    }
+
+    function closeManagerPinModal() {
+      document.getElementById("managerPinModal").style.display = "none";
+    }
+
+    async function updateManagerPin() {
+      const input = document.getElementById("newManagerPinInput");
+      const newPin = (input ? input.value : "").trim();
+      if (newPin.length < 4) {
+        alert("PIN kodu en az 4 haneli olmalıdır.");
+        return;
+      }
+      try {
+        const res = await fetch("/api/auth/set-manager-pin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin: newPin })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "PIN güncellenemedi");
+        document.getElementById("managerPinDisplay").textContent = newPin;
+        if (input) input.value = "";
+        alert("Yönetici PIN kodu başarıyla güncellendi!");
+      } catch (e) {
+        alert("Hata: " + e.message);
+      }
+    }
+
+    // Print Customer Total Bill
+    function printCustomerBill() {
+      if (!activeTable || !currentAccount) return;
+      const area = document.getElementById("printArea");
+      const rows = (currentAccount.items || []).filter(i => !i.isCancelled).map(i =>
+        `<tr><td style="width:24px;">${i.quantity}x</td><td>${i.productName}</td><td style="text-align:right;">${money(i.lineTotal)}</td></tr>`
+      ).join("");
+
+      area.innerHTML = `
+        <div style="font-size: 28px; font-weight: 900; text-align: center; border: 2px solid #000; padding: 6px; margin-bottom: 8px;">
+          ${activeTable.name}
+        </div>
+        <div style="font-size: 14px; text-align: center; font-weight: 700; margin-bottom: 6px;">ADİSYON / HESAP</div>
+        <div class="meta" style="font-size: 13px; line-height: 1.5; border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 8px;">
+          <div><strong>Hesap Açan:</strong> ${currentAccount.openedBy || "Garson"}</div>
+          <div><strong>Tarih:</strong> ${new Date().toLocaleString("tr-TR")}</div>
+        </div>
+        <table>${rows}</table>
+        <div class="total"><span>Toplam</span><span>${money(currentAccount.totalAmount)}</span></div>
+        ${currentAccount.paidAmount > 0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px;"><span>Ödenen</span><span>${money(currentAccount.paidAmount)}</span></div>` : ""}
+        <div class="total" style="font-size:14px;margin-top:4px;"><span>KALAN ÖDENECEK</span><span>${money(currentAccount.remainingAmount)}</span></div>
+        <div style="text-align:center;margin-top:12px;font-size:11px;">Bizi tercih ettiğiniz için teşekkür ederiz!</div>
+      `;
+      window.print();
+    }
+
+    // Print Kitchen/Bar Ticket for new order
+    function printKitchenTicket(ticket) {
+      const area = document.getElementById("printArea");
+      const rows = (ticket.items || []).map(i =>
+        `<tr><td style="width:28px;font-weight:bold;font-size:16px;">${i.quantity}x</td><td style="font-size:16px;">${i.name}</td><td style="text-align:right;font-size:15px;">${money(i.lineTotal)}</td></tr>`
+      ).join("");
+
+      area.innerHTML = `
+        <div style="font-size: 32px; font-weight: 900; text-align: center; border: 2px solid #000; padding: 6px; margin-bottom: 8px; letter-spacing: 1px;">
+          ${ticket.tableName}
+        </div>
+        <div style="font-size: 14px; text-align: center; font-weight: 700; margin-bottom: 6px;">MUTFAK / BAR SİPARİŞİ</div>
+        <div class="meta" style="font-size: 13px; line-height: 1.5; border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 8px;">
+          <div><strong>Hesap Açan:</strong> ${ticket.openedBy || "Garson"}</div>
+          <div><strong>Siparişi Giren:</strong> ${ticket.createdBy || "Garson"}</div>
+          <div><strong>Sipariş No:</strong> #${ticket.orderId} · ${new Date(ticket.createdAt).toLocaleTimeString("tr-TR")}</div>
+        </div>
+        <table>${rows}</table>
+        ${ticket.note ? `<div style="margin-top:8px;font-size:14px;font-weight:bold;border-top:1px dashed #000;padding-top:4px;">Not: ${ticket.note}</div>` : ""}
+      `;
+      try { window.print(); } catch(e){}
+    }
+
+    // Add Ticket to Feed
+    function addTicketCard(ticket, autoPrint) {
+      if (seenTickets.has(ticket.orderId)) return;
+      seenTickets.add(ticket.orderId);
+
+      const feed = document.getElementById("ticketsView");
+      const card = document.createElement("article");
+      card.className = "ticket-card";
+
+      const rows = (ticket.items || []).map(i =>
+        `<tr><td class="qty">${i.quantity}x</td><td>${i.name}</td><td class="price">${money(i.lineTotal)}</td></tr>`
+      ).join("");
+
+      card.innerHTML = `
+        <div style="font-size: 26px; font-weight: 900; color: #fff; margin-bottom: 4px;">${ticket.tableName}</div>
+        <div class="ticket-meta" style="margin-bottom: 10px; font-size: 13px; line-height: 1.5;">
+          <div>👤 Hesap Açan: <strong style="color:var(--accent);">${ticket.openedBy || "Garson"}</strong></div>
+          <div>✍️ Siparişi Giren: <strong style="color:#ffd8a8;">${ticket.createdBy || "Garson"}</strong></div>
+          <div style="color:var(--text-muted); font-size: 11px;">#${ticket.orderId} · ${new Date(ticket.createdAt).toLocaleTimeString("tr-TR")}</div>
+        </div>
+        <table class="ticket-table">${rows}</table>
+        <div class="ticket-total"><span>Toplam</span><span>${money(ticket.total)}</span></div>
+        ${ticket.note ? `<div style="font-style:italic;margin-top:6px;font-size:13px;color:#ffd8a8;">Not: ${ticket.note}</div>` : ""}
+        <button type="button" class="btn btn-secondary" style="width:100%;margin-top:10px;" onclick='printKitchenTicket(${JSON.stringify(ticket)})'>Tekrar Yazdır</button>
+      `;
+      feed.prepend(card);
+
+      if (autoPrint) {
+        printKitchenTicket(ticket);
+        fetch(`/api/orders/${ticket.orderId}/printed`, { method: "POST" });
+      }
+    }
+
+    async function loadPendingTickets() {
+      try {
+        const res = await fetch("/api/orders/pending");
+        if (!res.ok) return;
+        const orders = await res.json();
+        orders.forEach(o => addTicketCard(o, false));
+      } catch (e) {
+        console.error("loadPendingTickets error:", e);
+      }
+    }
+
+    // SignalR Connection
+    let connection;
+    try {
+      connection = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/kitchen")
+        .withAutomaticReconnect()
+        .build();
+
+      connection.on("orderReceived", ticket => {
+        addTicketCard(ticket, true);
+        loadTables();
+        if (activeTable && activeTable.number === ticket.tableNumber) {
+          refreshModalAccount(activeTable.id);
+        }
+      });
+
+      connection.on("tablesUpdated", () => {
+        loadTables();
+        if (activeTable) {
+          refreshModalAccount(activeTable.id);
+        }
+      });
+    } catch (e) {
+      console.error("SignalR init error:", e);
+    }
+
+    async function startSignalR() {
+      const statusPill = document.getElementById("statusPill");
+      const statusText = document.getElementById("statusText");
+      if (!connection) return;
+      try {
+        await connection.start();
+        statusPill.className = "status-pill";
+        statusText.textContent = "Kasa & Yazıcı Aktif";
+        await loadTables();
+        await loadPendingTickets();
+        await loadMenu();
+      } catch (err) {
+        statusPill.className = "status-pill bad";
+        statusText.textContent = "Bağlantı koptu";
+        setTimeout(startSignalR, 3000);
+      }
+    }
+
+    // Init - Call immediately so UI renders in milliseconds
+    loadTables();
+    loadPendingTickets();
+    loadMenu();
+    startSignalR();
+  </script>
+</body>
+</html>

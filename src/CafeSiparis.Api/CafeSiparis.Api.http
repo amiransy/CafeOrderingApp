@@ -1,0 +1,6 @@
+@CafeSiparis.Api_HostAddress = http://localhost:5014
+
+GET {{CafeSiparis.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
