@@ -15,7 +15,8 @@
 dotnet run --project src/CafeSiparis.Api
 ```
 
-2. Aynı ağdaki tarayıcıda kasa ekranını aç: `http://localhost:5088/station`  
+2. Aynı ağdaki tarayıcıda kasa ekranını aç: `http://localhost:5088/station`
+
    Yazıcı bu bilgisayara bağlıysa sipariş gelince yazdırma penceresi açılır.
 
 3. Garson uygulaması:
